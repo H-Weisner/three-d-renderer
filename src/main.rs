@@ -16,8 +16,8 @@
 // 4. Return Coordinates:
 // Finally, we return the adjusted x and y coordinates as integers (since screen positions are whole numbers).
 
-// SO TO PUT THIS INTO CODING TERMS
-// func project_3D_to_2D {point, width, height, fov, viewer_distance} {
+// In coding terms:
+// func project_3D_to_2D {point, width, height, fov, viewer_distance} => {
 //     const factor = fov / (viewer_distance + point.z)
 //     const x = point.x * factor + width / 2.0
 //     const y = -point.y * factor + height / 2.0
@@ -37,34 +37,32 @@
 // In coding terms:
 
 //  roll = rotation angle about X
-//  func rotatePointAboutX {x,y,z, roll}(
+//  func rotatePointAboutX {x,y,z, roll} => {
 //     const rotatedY number const = y*cos(roll)+z*sin(roll)
 //     const rotatedZ number const = -y*sin(roll)+z*cos(roll)]
 //     return {x, rotatedY, rotatedZ}
-//  )
+//  }
 
 //  pitch = rotation angle about Y
-//  func rotatePointAboutY {x,y,z, pitch}( 
+//  func rotatePointAboutY {x,y,z, pitch} => { 
 //     const rotatedX number const = x*cos(pitch)+z*sin(pitch)
 //     const rotatedZ number const = -y*sin(pitch)+z*cos(pitch)]
 //     return {rotatedX, y, rotatedZ}
 //  )
 
 //  yaw = rotation angle about Z
-//  func rotatePointAboutZ {x,y,z, yaw}( 
+//  func rotatePointAboutZ {x,y,z, yaw} => {
 //     const rotatedY number const = x*cos(yaw)-y*sin(yaw)
 //     const rotatedZ number const = x*sin(yaw)+y*cos(yaw)]
 //     return {rotatedX, rotatedY, z}
-//  )
+//  }
 
 
 // * Rust Time
 // First we do our imports
-
-
 // Crossterm library to manage input and output into the console. I.e. to allow user to zoom in/out
 use crossterm::event::{self, Event, KeyCode};
-// Importing the standard library's floating point mathematical constants
+// Importing the standard library's floating point mathematical constants, here it's PI
 use std::f64::consts::PI;
 // The sleep function the std::thread module is used to pause the current thread for a specified amount of time. i.e. for animations.
 use std::thread::sleep;
@@ -78,6 +76,15 @@ struct Point3D {
     x: f64,
     y: f64,
     z: f64,
+}
+
+
+// Project a 3D point to 2D
+fn project(point: &Point3D, width: f64, height: f64, fov: f64, viewer_distance: f64) -> (i32, i32) {
+    let factor = fov / (viewer_distance + point.z);
+    let x = point.x * factor + width / 2.0;
+    let y = -point.y * factor + height / 2.0;
+    (x as i32, y as i32)
 }
 
 // Rotate a point around the X axis
@@ -108,14 +115,6 @@ fn rotate_about_z(point: &Point3D, yaw: f64) -> Point3D {
         y: point.x * sin + point.y * cos,
         z: point.z,
     }
-}
-
-// Project a 3D point to 2D
-fn project(point: &Point3D, width: f64, height: f64, fov: f64, viewer_distance: f64) -> (i32, i32) {
-    let factor = fov / (viewer_distance + point.z);
-    let x = point.x * factor + width / 2.0;
-    let y = -point.y * factor + height / 2.0;
-    (x as i32, y as i32)
 }
 
 // Clear the terminal
@@ -180,33 +179,38 @@ fn main() {
             let y_length: i32 = y_end - y_start;
 
             //Number of #s to draw the line
-            let steps: i32 = x_length.abs().max(y_length.abs());
+            let hashtags: i32 = x_length.abs().max(y_length.abs());
             //How much to move the # x and y with each step
-            let x_movement: f64 = x_length as f64 / steps as f64;
-            let y_movement: f64 = y_length as f64 / steps as f64;
+            let x_movement: f64 = x_length as f64 / hashtags as f64;
+            let y_movement: f64 = y_length as f64 / hashtags as f64;
 
             //Define x and y that are mapped through on each step
             let mut x: f64 = x_start as f64;
             let mut y: f64 = y_start as f64;
 
-            for _ in 0..=steps {
-                //If movement bigger
+            for _ in 0..=hashtags {
+                //Ensure x & y are in bounds of the screen do something
                 if x >= 0.0 && x < width && y >= 0.0 && y < height {
+                    //That something is put a # at that point in the screen instead of a ' ' that got defined earlier
                     screen[y as usize][x as usize] = '#';
                 }
+                //Then move x and y for the next loop
                 x += x_movement;
                 y += y_movement;
             }
         }
 
+        //This then prints each row in the screen vector
         for row in screen {
+            //Collects each row and turns it into a string.
             println!("{}", row.iter().collect::<String>());
         }
 
+        //Increase the angle for the loop
         angle += 0.01;
         //Duration between each rotation
         sleep(Duration::from_millis(20));
-        // Event poll(timeout) checks for an event, in this case a key input every 1 seconds
+        // Event poll(timeout) checks for an event, in this case a key input every millisecond
         if event::poll(Duration::from_millis(1)).unwrap() {
             // 
             if let Event::Key(key_event) = event::read().unwrap() {
